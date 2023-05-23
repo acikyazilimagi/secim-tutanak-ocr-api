@@ -13,6 +13,8 @@ from starlette.requests import Request
 from secim_tutanak_ocr_api.core.config import UPLOAD_FOLDER_PATH,RESULT_FOLDER_PATH,SAVE_RESULTS
 from secim_tutanak_ocr_api.models.ocr import ImageOCRRequest,ImageOCRResponse
 
+from secim_tutanak_ocr_api.services.qr_detector import dedection_and_decode_qr_code
+
 
 router = APIRouter()
 
@@ -69,7 +71,13 @@ async def predimg(request: Request,request_data: ImageOCRRequest = Depends()) : 
 
 
     scanned_document_img, saved_path_aligned_img = document_scanner_service.scan_and_align(base_name)
-
+    
+    # (QR Detection) from aligned document
+    results_decoded = dedection_and_decode_qr_code(image_path=saved_path_aligned_img)
+    if results_decoded:
+        print(results_decoded)
+    else:
+        raise HTTPException(status_code = 404, detail = 'This Document does not contain any QR !')
 
     #Preprocessing Step - 2  (Detection)
     from secim_tutanak_ocr_api.services.table_detector import TableDetector
