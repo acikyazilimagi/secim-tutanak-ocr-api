@@ -19,7 +19,7 @@ from secim_tutanak_ocr_api.services.qr_detector import dedection_and_decode_qr_c
 router = APIRouter()
 
 @router.post("/predimg")
-async def predimg(request: Request,request_data: ImageOCRRequest = Depends()) : #TODO -> ImageOCRResponse : #TODO authentication ? 
+async def predimg(request: Request,request_data: ImageOCRRequest = Depends()) -> ImageOCRResponse : #TODO authentication ? 
 
     if request_data.file: # Capture Uploaded Image and save
         base_name = request_data.file.filename
@@ -65,9 +65,10 @@ async def predimg(request: Request,request_data: ImageOCRRequest = Depends()) : 
     # (QR Detection) from aligned document
     results_decoded = dedection_and_decode_qr_code(image_path=saved_path_aligned_img)
     if results_decoded:
-        print(results_decoded)
+        qr_codes_in_document = [result_decoded['text'] for result_decoded in results_decoded]
     else:
-        raise HTTPException(status_code = 404, detail = 'This Document does not contain any QR !')
+        qr_codes_in_document = ['This document does not contain any QR !']
+        #raise HTTPException(status_code = 404, detail = 'This document does not contain any QR !')
 
 
     #Preprocessing Step - 2  (Detection)
@@ -89,12 +90,28 @@ async def predimg(request: Request,request_data: ImageOCRRequest = Depends()) : 
 
 
     # OCR  Step -3
-    save_path = Path(RESULT_FOLDER_PATH,base_name).as_posix()
+    ocr_results = []
 
-    for cropped_img_path in cropped_region_saved_paths:
+    save_path = Path(RESULT_FOLDER_PATH,base_name).as_posix()
+    for i,cropped_img_path in enumerate(cropped_region_saved_paths):
         print(cropped_img_path)
         results = request.app.state.ocr_service.ocr(cropped_img_path)
         print('results ocr :',results)
         request.app.state.ocr_service.save_ocr(cropped_img_path,save_path,results[0])
 
-    return 'Success' #ImageOCRResponse(**result)
+
+        raw_texts = [f'{line[1][0]}\n' for line in results[0]]
+
+        ocr_results.append({
+            'table_id' : f'table-{i}',
+            'raw_text' : raw_texts
+        })
+
+
+    result_data = {
+        'file_name': base_name,
+        'qr_codes' : qr_codes_in_document,
+        'ocr_results' : ocr_results
+    }
+
+    return ImageOCRResponse(**result_data)
