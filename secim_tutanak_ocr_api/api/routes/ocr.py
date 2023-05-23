@@ -67,8 +67,8 @@ async def predimg(request: Request,request_data: ImageOCRRequest = Depends()) ->
     if results_decoded:
         qr_codes_in_document = [result_decoded['text'] for result_decoded in results_decoded]
     else:
-        qr_codes_in_document = ['This document does not contain any QR !']
-        #raise HTTPException(status_code = 404, detail = 'This document does not contain any QR !')
+        #qr_codes_in_document = ['This document does not contain any QR !']
+        raise HTTPException(status_code = 404, detail = 'This document does not contain any QR !')
 
 
     #Preprocessing Step - 2  (Detection)
