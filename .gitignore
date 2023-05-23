@@ -1,8 +1,9 @@
 #datas
-_results/
-_uploads/
-!_results/.gitkeep
-!_uploads/.gitkeep
+secim_tutanak_ocr_api/_results/*
+!secim_tutanak_ocr_api/_results/.gitkeep
+
+secim_tutanak_ocr_api/_uploads/*
+!secim_tutanak_ocr_api/_uploads/.gitkeep
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
