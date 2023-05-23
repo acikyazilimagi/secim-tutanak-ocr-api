@@ -59,19 +59,9 @@ async def predimg(request: Request,request_data: ImageOCRRequest = Depends()) : 
 
 
     #Preprocessing Step - 1  (Document Alignment)
-    from secim_tutanak_ocr_api.services.document_scanner import DocumentScanner
-
-    checkpoint_path = "secim_tutanak_ocr_api/model_weights/document_scanner_weights/model_mbv3_iou_mix_2C049.pth"
-
-    document_scanner_service = DocumentScanner(checkpoint_path=checkpoint_path,
-                                                num_classes=2,
-                                                model_name='mbv3',
-                                                device='cpu' #TODO: GPU-CUDA TEST Require 'cuda'
-                                            )
-
-
-    scanned_document_img, saved_path_aligned_img = document_scanner_service.scan_and_align(base_name)
+    scanned_document_img, saved_path_aligned_img = request.app.state.document_scanner_service.scan_and_align(base_name)
     
+
     # (QR Detection) from aligned document
     results_decoded = dedection_and_decode_qr_code(image_path=saved_path_aligned_img)
     if results_decoded:
@@ -79,11 +69,10 @@ async def predimg(request: Request,request_data: ImageOCRRequest = Depends()) : 
     else:
         raise HTTPException(status_code = 404, detail = 'This Document does not contain any QR !')
 
+
     #Preprocessing Step - 2  (Detection)
-    from secim_tutanak_ocr_api.services.table_detector import TableDetector
-    
-    table_detector_service = TableDetector()
-    table_detector_results, base_name_table_detected_img = table_detector_service.detect(saved_path_aligned_img)
+    table_detector_results, base_name_table_detected_img = request.app.state.table_detector_service.detect(saved_path_aligned_img)
+
 
     #save all detected tables separately
     cropped_region_saved_paths = []
@@ -100,15 +89,12 @@ async def predimg(request: Request,request_data: ImageOCRRequest = Depends()) : 
 
 
     # OCR  Step -3
-    from secim_tutanak_ocr_api.services.paddlepaddle_ocr import PaddlePaddleOcr
-    ocr_service = PaddlePaddleOcr()
-
     save_path = Path(RESULT_FOLDER_PATH,base_name).as_posix()
 
     for cropped_img_path in cropped_region_saved_paths:
         print(cropped_img_path)
-        results = ocr_service.ocr(cropped_img_path)
+        results = request.app.state.ocr_service.ocr(cropped_img_path)
         print('results ocr :',results)
-        ocr_service.save_ocr(cropped_img_path,save_path,results[0])
+        request.app.state.ocr_service.save_ocr(cropped_img_path,save_path,results[0])
 
     return 'Success' #ImageOCRResponse(**result)
