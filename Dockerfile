@@ -11,7 +11,7 @@ RUN add-apt-repository ppa:deadsnakes/ppa && \
 RUN apt-get install -y python3-distutils
 RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip.py
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 1
-RUN apt-get install libzbar0
+RUN apt-get install -y libzbar0
 
 RUN pip3 install --upgrade pip
 
